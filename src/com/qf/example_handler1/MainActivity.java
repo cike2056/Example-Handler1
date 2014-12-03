@@ -20,18 +20,21 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-/**主线程中加载耗时.
- * (没有控件,空白)卡死,或是崩溃.
+/**
+ * 接口的对象这样传递:onCreate中的new Network()传给setTxProgress中的iNetWork,INetWork传给Handler中的netWork.
  * @author uaige
  *
  */
 public class MainActivity extends Activity {
 	private ProgressBar pb;
 	private TextView tx;
+	Network netWork;
 	private Handler handler = new Handler(){
 		public void handleMessage(android.os.Message msg) {
 			if(msg.what==1)//标示
-			{tx.setText(msg.obj.toString());}
+			{
+				netWork.getUrlData(msg.obj.toString());
+				}
 		};
 	};
 	@Override
@@ -39,7 +42,13 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		initView();
-		setTxProgress();
+		setTxProgress("http://sns.maimaicha.com/api?apikey=b4f4ee"
+				+ "31a8b9acc866ef2afb754c33e6&format=json&method=news.getHeadlines&page=0&rows=15",new Network() {
+					@Override
+					public void getUrlData(String string) {
+						tx.setText(string);
+					}
+				});
 	}
 	
 	/**
@@ -53,16 +62,16 @@ public class MainActivity extends Activity {
 	/**
 	 * 设置Progress
 	 */
-	private void setTxProgress() {
+	private void setTxProgress(final String uri,final Network iNetWork) {
 		// TODO Auto-generated method stub
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
+				netWork = iNetWork;
 				for(int i=0;i<100;i++){
 					HttpClient client = new DefaultHttpClient();
 					HttpParams params = client.getParams();
-					HttpGet httpGet = new HttpGet("http://sns.maimaicha.com/api?apikey=b4f4ee"
-							+ "31a8b9acc866ef2afb754c33e6&format=json&method=news.getHeadlines&page=0&rows=15");
+					HttpGet httpGet = new HttpGet(uri);
 					HttpConnectionParams.setConnectionTimeout(params, 5000);
 					try {
 						HttpResponse httpResponse = client.execute(httpGet);
@@ -78,6 +87,8 @@ public class MainActivity extends Activity {
 				}
 			}
 		}).start();
-		
 	}
+	interface Network{
+		public void getUrlData(String string);
+	} 
 }
