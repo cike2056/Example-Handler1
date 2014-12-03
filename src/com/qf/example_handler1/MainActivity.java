@@ -1,5 +1,17 @@
 package com.qf.example_handler1;
 
+import java.io.IOException;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,9 +30,8 @@ public class MainActivity extends Activity {
 	private TextView tx;
 	private Handler handler = new Handler(){
 		public void handleMessage(android.os.Message msg) {
-			msg.what=1;//标示
-			pb.setProgress(msg.arg1);
-			tx.setText(""+msg.arg1+"%");
+			if(msg.what==1)//标示
+			{tx.setText(msg.obj.toString());}
 		};
 	};
 	@Override
@@ -48,16 +59,19 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				for(int i=0;i<100;i++){
+					HttpClient client = new DefaultHttpClient();
+					HttpParams params = client.getParams();
+					HttpGet httpGet = new HttpGet("http://sns.maimaicha.com/api?apikey=b4f4ee"
+							+ "31a8b9acc866ef2afb754c33e6&format=json&method=news.getHeadlines&page=0&rows=15");
+					HttpConnectionParams.setConnectionTimeout(params, 5000);
 					try {
-						Thread.sleep(1000);
-//						pb.setProgress(i);
-//						tx.setText(""+i+"%");
-						Message message = handler.obtainMessage();
-						message.arg1=i;/**内容*/
-						message.obj="start";/**多类型内容*/
-						message.what=1;/**标识*/
-						handler.sendMessage(message);
-					} catch (InterruptedException e) {
+						HttpResponse httpResponse = client.execute(httpGet);
+						if(httpResponse!=null&&httpResponse.getStatusLine().getStatusCode()==HttpStatus.SC_OK){
+							HttpEntity entity = httpResponse.getEntity();
+							String string = EntityUtils.toString(entity);
+							handler.sendMessage(handler.obtainMessage(1, string));
+						}
+					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
